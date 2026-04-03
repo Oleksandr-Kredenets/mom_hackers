@@ -1,6 +1,5 @@
-namespace TMS.Application.Services
+namespace TMS.Application.Services;
+public class FuelService : IFuelService
 {
-    public class FuelService : IFuelService
-    {
-    }
+    
 }
