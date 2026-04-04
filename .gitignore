@@ -1,5 +1,66 @@
-**/obj/
+# Build output (.NET)
 **/bin/
+**/obj/
+**/out/
+
+# Solution / user-specific VS / Rider
 *.sln
 ./backend/*.sln
+*.user
+*.userosscache
+*.suo
+*.rsuser
+.vs/
+.idea/
+
+# Secrets & local env (keep .env.template tracked)
 .env
+.env.local
+.env.*.local
+*.pfx
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Logs & temp
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/
+
+# Test / coverage
+TestResults/
+[Tt]est[Rr]esult*/
+coverage/
+*.coverage
+.coverage.*
+
+# Local NuGet artifacts
+*.nupkg
