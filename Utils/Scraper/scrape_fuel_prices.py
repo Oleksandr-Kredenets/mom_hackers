@@ -1,9 +1,11 @@
 import csv
+import os
 import re
 import sys
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -11,7 +13,33 @@ from bs4 import BeautifulSoup
 # Оператор А 95+ А 95 А 92 ДП Газ
 # -1 означає що ціна не зазначена
 
-URL = "https://index.minfin.com.ua/ua/markets/fuel/tm/"
+FUEL_PRICE_API_URL_ENV = "FUEL_PRICE_API_URL"
+
+
+def _is_valid_http_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+
+
+def resolve_fuel_price_url(cli_url: str | None) -> str:
+    """URL from --url if non-empty, else FUEL_PRICE_API_URL. Raises ValueError if missing or invalid."""
+    for candidate in (
+        (cli_url or "").strip() or None,
+        (os.environ.get(FUEL_PRICE_API_URL_ENV) or "").strip() or None,
+    ):
+        if candidate is not None:
+            if not _is_valid_http_url(candidate):
+                raise ValueError(
+                    f"Invalid fuel price URL {candidate!r}: expected http(s) URL with a host "
+                    f"(from --url or {FUEL_PRICE_API_URL_ENV})."
+                )
+            return candidate
+    raise ValueError(
+        f"No fuel price URL: pass --url or set {FUEL_PRICE_API_URL_ENV} to a valid http(s) URL."
+    )
 
 COLUMN_KEYS = ("operator", "a95_plus", "a95", "a92", "dp", "gas")
 
@@ -116,7 +144,12 @@ if __name__ == "__main__":
             pass
 
     parser = ArgumentParser()
-    parser.add_argument("--url", type=str, default=URL)
+    parser.add_argument(
+        "--url",
+        type=str,
+        default=None,
+        help=f"Page URL to scrape (default: {FUEL_PRICE_API_URL_ENV} environment variable)",
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -130,6 +163,10 @@ if __name__ == "__main__":
         help="Output format (default: csv). More formats can be registered later.",
     )
     args = parser.parse_args()
-    data = scrape_fuel_prices(args.url)
+    try:
+        url = resolve_fuel_price_url(args.url)
+    except ValueError as e:
+        parser.error(str(e))
+    data = scrape_fuel_prices(url)
     out_path = write_fuel_prices(data, args.output_dir, format_name=args.format)
     print(f"Wrote {len(data)} rows to {out_path}")
