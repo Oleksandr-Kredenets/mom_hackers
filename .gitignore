@@ -2,3 +2,4 @@
 **/bin/
 *.sln
 ./backend/*.sln
+.env
