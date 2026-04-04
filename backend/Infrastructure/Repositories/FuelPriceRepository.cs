@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration.Attributes;
@@ -8,11 +9,51 @@ namespace TMS.Infrastructure.Repositories;
 
 public class FuelPriceRepository : IFuelPriceRepository
 {
-    private readonly Dictionary<string, OperatorFuelPrice> _operatorFuelPrices;
+    private static readonly FrozenDictionary<string, FuelOperatorType> CsvOperatorToEnum =
+        new Dictionary<string, FuelOperatorType>(StringComparer.Ordinal)
+        {
+            ["AMIC"] = FuelOperatorType.Amic,
+            ["BVS"] = FuelOperatorType.Bvs,
+            ["Brent Oil"] = FuelOperatorType.BrentOil,
+            ["Chipo"] = FuelOperatorType.Chipo,
+            ["EURO5"] = FuelOperatorType.Euro5,
+            ["Grand Petrol"] = FuelOperatorType.GrandPetrol,
+            ["Green Wave"] = FuelOperatorType.GreenWave,
+            ["KLO"] = FuelOperatorType.Klo,
+            ["Mango"] = FuelOperatorType.Mango,
+            ["Marshal"] = FuelOperatorType.Marshal,
+            ["Motto"] = FuelOperatorType.Motto,
+            ["Neftek"] = FuelOperatorType.Neftek,
+            ["Ovis"] = FuelOperatorType.Ovis,
+            ["Parallel"] = FuelOperatorType.Parallel,
+            ["RLS"] = FuelOperatorType.Rls,
+            ["Rodnik"] = FuelOperatorType.Rodnik,
+            ["SOCAR"] = FuelOperatorType.Socar,
+            ["SUN OIL"] = FuelOperatorType.SunOil,
+            ["U.GO"] = FuelOperatorType.UGo,
+            ["UKRNAFTA"] = FuelOperatorType.Ukrnafta,
+            ["UPG"] = FuelOperatorType.Upg,
+            ["VST"] = FuelOperatorType.Vst,
+            ["VostokGaz"] = FuelOperatorType.VostokGaz,
+            ["WOG"] = FuelOperatorType.Wog,
+            ["ZOG"] = FuelOperatorType.Zog,
+            ["Авантаж 7"] = FuelOperatorType.Avantazh7,
+            ["Автотранс"] = FuelOperatorType.Avtotrans,
+            ["БРСМ-Нафта"] = FuelOperatorType.BrsmNafta,
+            ["ДНІПРОНАФТА"] = FuelOperatorType.Dnipronafta,
+            ["Катрал"] = FuelOperatorType.Katral,
+            ["Кворум"] = FuelOperatorType.Kvorum,
+            ["Маркет"] = FuelOperatorType.Market,
+            ["ОККО"] = FuelOperatorType.Okko,
+            ["Олас"] = FuelOperatorType.Olas,
+            ["Рур груп"] = FuelOperatorType.RurGrup,
+            ["СВОЇ"] = FuelOperatorType.Svoi,
+            ["Фактор"] = FuelOperatorType.Faktor,
+        }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    public FuelPriceRepository(string? csvPath = null)
+    private List<OperatorFuelPrice> ReadOperatorFuelPrices()
     {
-        csvPath ??= Environment.GetEnvironmentVariable("FUEL_PRICE_CSV_PATH");
+        var csvPath = Environment.GetEnvironmentVariable("FUEL_PRICE_CSV_PATH");
         if (string.IsNullOrWhiteSpace(csvPath))
             throw new InvalidOperationException("FUEL_PRICE_CSV_PATH environment variable is not set.");
 
@@ -21,10 +62,7 @@ public class FuelPriceRepository : IFuelPriceRepository
 
         using var reader = new StreamReader(csvPath);
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-        _operatorFuelPrices = csv
-            .GetRecords<FuelPriceCsvRow>()
-            .Select(ToOperatorFuelPrice)
-            .ToDictionary(op => op.Operator);
+        return csv.GetRecords<FuelPriceCsvRow>().Select(ToOperatorFuelPrice).ToList();
     }
 
     private sealed class FuelPriceCsvRow
@@ -50,33 +88,41 @@ public class FuelPriceRepository : IFuelPriceRepository
 
     private static double? NormalizePrice(double value) => value == -1 ? null : value;
 
-    private static OperatorFuelPrice ToOperatorFuelPrice(FuelPriceCsvRow row) => new(
-        row.Operator,
-        new Dictionary<FuelType, double?>
-        {
-            [FuelType.A95Plus] = NormalizePrice(row.A95Plus),
-            [FuelType.A95] = NormalizePrice(row.A95),
-            [FuelType.A92] = NormalizePrice(row.A92),
-            [FuelType.DP] = NormalizePrice(row.Dp),
-            [FuelType.Gas] = NormalizePrice(row.Gas),
-        });
-
-    public Task<OperatorFuelPrice> GetOperatorFuelPriceAsync(string operatorName)
+    private static OperatorFuelPrice ToOperatorFuelPrice(FuelPriceCsvRow row)
     {
-        return Task.FromResult(_operatorFuelPrices[operatorName]);
+        var key = row.Operator.Trim();
+        if (!CsvOperatorToEnum.TryGetValue(key, out var fuelOperator))
+            throw new InvalidDataException($"Unknown fuel operator in CSV: {row.Operator}");
+
+        return new OperatorFuelPrice(
+            fuelOperator,
+            new Dictionary<FuelType, double?>
+            {
+                [FuelType.A95Plus] = NormalizePrice(row.A95Plus),
+                [FuelType.A95] = NormalizePrice(row.A95),
+                [FuelType.A92] = NormalizePrice(row.A92),
+                [FuelType.DP] = NormalizePrice(row.Dp),
+                [FuelType.Gas] = NormalizePrice(row.Gas),
+            });
+    }
+
+    public Task<OperatorFuelPrice> GetOperatorFuelPriceAsync(FuelOperatorType operatorType)
+    {
+        var byOperator = ReadOperatorFuelPrices().ToDictionary(op => op.Operator);
+        return Task.FromResult(byOperator[operatorType]);
     }
 
     public Task<IEnumerable<OperatorFuelPrice>> GetAllOperatorFuelPricesAsync()
     {
-        return Task.FromResult(_operatorFuelPrices.Values.ToList());
+        return Task.FromResult<IEnumerable<OperatorFuelPrice>>(ReadOperatorFuelPrices());
     }
 
     public Task<IEnumerable<OperatorFuelPrice>> GetCheapestOperatorByFuelTypeAsync(FuelType fuelType)
     {
-        return Task.FromResult(
-            _operatorFuelPrices.Values
-                .Where(op => op.FuelPrices[fuelType] is not null)
-                .OrderBy(op => op.FuelPrices[fuelType])
-                .ToList());
+        var result = ReadOperatorFuelPrices()
+            .Where(op => op.FuelPrices[fuelType] is not null)
+            .OrderBy(op => op.FuelPrices[fuelType])
+            .ToList();
+        return Task.FromResult<IEnumerable<OperatorFuelPrice>>(result);
     }
 }
