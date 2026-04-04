@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вхід / Реєстрація</title>
+  <link rel="stylesheet" href="./css/auth.css" />
+</head>
+<body class="dark">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div>
+          <h1>Logistics App</h1>
+          <p class="subtitle">Увійдіть або створіть акаунт</p>
+        </div>
+
+        <div class="theme-switch">
+          <button type="button" id="lightBtn">☀️ Світла</button>
+          <button type="button" id="darkBtn">🌙 Темна</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button id="loginTab" class="tab active" type="button">Вхід</button>
+        <button id="registerTab" class="tab" type="button">Реєстрація</button>
+      </div>
+
+      <form id="authForm" class="auth-form">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Введіть email" required />
+
+        <label for="password">Пароль</label>
+        <input type="password" id="password" placeholder="Введіть пароль" required />
+
+        <div id="nameField" class="hidden">
+          <label for="name">Ім’я</label>
+          <input type="text" id="name" placeholder="Введіть ім’я" />
+        </div>
+
+        <button type="submit" id="submitBtn" class="main-btn">Увійти</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="./js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logistics Dashboard</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body class="dark">
+  <div class="app">
+    <div class="topbar">
+      <h1>Logistics Dashboard</h1>
+
+      <div class="topbar-actions">
+        <div class="theme-switch">
+          <button type="button" id="lightBtn">☀️ Світла</button>
+          <button type="button" id="darkBtn">🌙 Темна</button>
+        </div>
+
+        <button type="button" id="logoutBtn" class="logout-btn">Вийти</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="card task-panel">
+        <h2><i class="fa-solid fa-list-check"></i> Панель завдань</h2>
+
+        <button><i class="fa-solid fa-plus"></i> Додати точку</button>
+        <button><i class="fa-solid fa-trash"></i> Видалити точку</button>
+        <button><i class="fa-solid fa-warehouse"></i> Додати склад</button>
+        <button><i class="fa-solid fa-trash-can"></i> Видалити склад</button>
+        <button><i class="fa-solid fa-route"></i> Розрахувати маршрут</button>
+        <button><i class="fa-solid fa-pencil"></i> Вказати маршрут</button>
+        <button><i class="fa-solid fa-gas-pump"></i> Розрахувати ціну</button>
+      </div>
+
+      <div class="middle-column">
+        <div class="card points">
+          <h2><i class="fa-solid fa-location-dot"></i> Список точок</h2>
+
+          <div class="list-item">
+            <div class="list-title">Точка 1</div>
+            <div class="list-subtitle">вул. Шевченка, 12</div>
+            <span class="badge">Постачальна точка</span>
+          </div>
+
+          <div class="list-item">
+            <div class="list-title">Склад 1</div>
+            <div class="list-subtitle">вул. Промислова, 8</div>
+            <span class="badge">Склад</span>
+          </div>
+        </div>
+
+        <div class="card routes">
+          <h2><i class="fa-solid fa-road"></i> Список маршрутів</h2>
+
+          <div class="list-item">
+            <div class="list-title">Маршрут #1</div>
+            <div class="list-subtitle">Склад 1 → Точка 1</div>
+            <span class="badge">12.4 км</span>
+          </div>
+
+          <div class="list-item">
+            <div class="list-title">Маршрут #2</div>
+            <div class="list-subtitle">Склад 1 → Точка 2</div>
+            <span class="badge">18.7 км</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card map">
+        <h2><i class="fa-solid fa-map-location-dot"></i> Карта</h2>
+        <div id="map"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="./js/script.js"></script>
+</body>
+</html>
