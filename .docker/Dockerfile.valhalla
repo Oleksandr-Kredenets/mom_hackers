@@ -1,0 +1,17 @@
+# Build (from repository root):
+#   docker build -f .docker/Dockerfile.valhalla . -t hackathon-valhalla
+
+# Run:
+#   docker run -p 127.0.0.1:8002:8002 -v ${PWD}\Utils\ValhallaHelper\data:/data hackathon-valhalla
+
+FROM valhalla/valhalla:run-latest
+WORKDIR /valhalla
+
+COPY Utils/ValhallaHelper/valhalla-start.sh /valhalla/valhalla-start.sh
+RUN chmod +x /valhalla/valhalla-start.sh
+
+ENV VALHALLA_PERSISTENT_DIR_CONTAINER=/data
+ENV VALHALLA_PORT=8002
+EXPOSE $VALHALLA_PORT
+
+CMD ["/valhalla/valhalla-start.sh"]

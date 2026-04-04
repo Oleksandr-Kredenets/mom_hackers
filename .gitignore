@@ -46,6 +46,7 @@ temp/
 *.temp
 *.swp
 *~
+Utils/ValhallaHelper/data/
 
 # OS
 .DS_Store
