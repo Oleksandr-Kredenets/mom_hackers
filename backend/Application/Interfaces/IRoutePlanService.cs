@@ -7,5 +7,6 @@ public interface IRoutePlanService
 {
     Task<GeoJsonFeatureCollection> BuildGeoJsonAsync(
         RoutePlanRequest request,
+        Guid userId,
         CancellationToken cancellationToken = default);
 }

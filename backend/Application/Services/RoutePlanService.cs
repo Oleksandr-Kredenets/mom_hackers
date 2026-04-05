@@ -4,8 +4,11 @@ using TMS.Application.Interfaces;
 using TMS.Application.Models;
 using TMS.Application.Models.GeoJson;
 using TMS.Application.Routing;
+using TMS.Application.Validation;
 using TMS.Domain.Enums;
+using TMS.Domain.Interfaces;
 using TMS.Domain.Models;
+using RouteEntity = TMS.Domain.Models.Route;
 
 namespace TMS.Application.Services;
 
@@ -17,25 +20,30 @@ public class RoutePlanService : IRoutePlanService
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
 
-    private readonly IValhallaClient _valhalla;
+    private static readonly List<RouteVehicleSpecification> DefaultVehicles =
+    [
+        new RouteVehicleSpecification { Id = "default" },
+    ];
 
-    public RoutePlanService(IValhallaClient valhalla)
+    private readonly IValhallaClient _valhalla;
+    private readonly IRouteRepository _routeRepository;
+
+    public RoutePlanService(IValhallaClient valhalla, IRouteRepository routeRepository)
     {
         _valhalla = valhalla;
+        _routeRepository = routeRepository;
     }
 
     public async Task<GeoJsonFeatureCollection> BuildGeoJsonAsync(
         RoutePlanRequest request,
+        Guid userId,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.Points.Count < 2)
-            throw new ArgumentException("At least two points are required.", nameof(request));
-        if (request.Vehicles.Count < 1)
-            throw new ArgumentException("At least one vehicle is required.", nameof(request));
 
-        var ordered = request.Points.OrderBy(p => p.Sequence).ToList();
-        ValidatePointSequence(ordered);
+        var vehicles = request.Vehicles.Count > 0 ? request.Vehicles : DefaultVehicles;
+
+        var ordered = RoutePlanPointSequenceValidator.OrderAndValidate(request.Points);
 
         var start = ordered[0];
         var end = ordered[^1];
@@ -61,7 +69,7 @@ public class RoutePlanService : IRoutePlanService
         var routes = OrToolsVehicleRouteOptimizer.Solve(
             matrices.DurationSeconds,
             matrices.DistanceMeters,
-            request.Vehicles,
+            vehicles,
             depotIndex,
             endIndex,
             waypointNodeCount: waypoints.Count);
@@ -69,7 +77,7 @@ public class RoutePlanService : IRoutePlanService
         var features = new List<GeoJsonFeature>();
         for (var v = 0; v < routes.Count; v++)
         {
-            var vehicle = request.Vehicles[v];
+            var vehicle = vehicles[v];
             var nodePath = routes[v];
             if (nodePath.Count < 2)
                 continue;
@@ -104,10 +112,15 @@ public class RoutePlanService : IRoutePlanService
                         ?? JsonValue.Create(vehicle.Id),
                 },
             });
+
+            var routeEntity = new RouteEntity { UserId = userId };
+            var persistPoints = BuildPersistedRoutePoints(routeEntity.Id, stops);
+            await _routeRepository.AddRouteAsync(routeEntity, persistPoints, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         var depot = new GeoCoordinate(start.Latitude, start.Longitude);
-        foreach (var vehicle in request.Vehicles)
+        foreach (var vehicle in vehicles)
         {
             features.Add(new GeoJsonFeature
             {
@@ -127,14 +140,28 @@ public class RoutePlanService : IRoutePlanService
         return new GeoJsonFeatureCollection { Features = features };
     }
 
-    private static void ValidatePointSequence(IReadOnlyList<RoutePlanPoint> ordered)
+    private static List<RoutePoint> BuildPersistedRoutePoints(Guid routeId, IReadOnlyList<GeoCoordinate> stops)
     {
-        var starts = ordered.Count(p => p.Type == RoutePointType.Start);
-        var ends = ordered.Count(p => p.Type == RoutePointType.End);
-        if (starts != 1 || ends != 1)
-            throw new ArgumentException("Exactly one Start and one End point are required.");
+        var list = new List<RoutePoint>(stops.Count);
+        for (var i = 0; i < stops.Count; i++)
+        {
+            var type = i == 0
+                ? RoutePointType.Start
+                : i == stops.Count - 1
+                    ? RoutePointType.End
+                    : RoutePointType.Waypoint;
+            var s = stops[i];
+            list.Add(new RoutePoint
+            {
+                Id = Guid.NewGuid(),
+                RouteId = routeId,
+                Sequence = i,
+                Type = type,
+                Latitude = s.Latitude,
+                Longitude = s.Longitude,
+            });
+        }
 
-        if (ordered[0].Type != RoutePointType.Start || ordered[^1].Type != RoutePointType.End)
-            throw new ArgumentException("The first point must be Start and the last must be End after ordering by sequence.");
+        return list;
     }
 }

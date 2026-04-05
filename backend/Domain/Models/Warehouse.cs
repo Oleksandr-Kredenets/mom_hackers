@@ -1,13 +1,14 @@
 namespace TMS.Domain.Models;
 
-public class Route
+public class Warehouse
 {
-    public Route()
+    public Warehouse()
     {
         Id = Guid.NewGuid();
     }
 
     public Guid Id { get; init; }
     public Guid UserId { get; set; }
-    public bool IsActive { get; set; } = true;
+    public int Latitude { get; set; }
+    public int Longitude { get; set; }
 }

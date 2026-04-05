@@ -28,7 +28,7 @@ public sealed class RouteVehicleSpecification
 }
 
 /// <summary>
-/// Request body for POST /api/route.
+/// Request body for POST /api/route/calculate. If <see cref="Vehicles"/> is empty, a single default vehicle is used.
 /// </summary>
 public sealed class RoutePlanRequest
 {

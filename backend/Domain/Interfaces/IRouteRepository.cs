@@ -2,8 +2,26 @@ namespace TMS.Domain.Interfaces;
 
 public interface IRouteRepository
 {
-    Task<Models.Route> GetRouteByIdAsync(Guid id);
-    Task<IEnumerable<Models.Route>> GetAllRoutesAsync();
-    Task AddRouteAsync(Models.Route route, IEnumerable<Models.RoutePoint> points);
-    Task DeleteRouteAsync(Guid id);
+    Task AddRouteAsync(Models.Route route, IEnumerable<Models.RoutePoint> points, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Models.RouteListItem>> GetActiveRoutesForUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
+    Task<Models.RouteDetailResponse?> GetRouteDetailForUserAsync(
+        Guid routeId,
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> TryDeleteRouteForUserAsync(Guid routeId, Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// When <paramref name="replacementPoints"/> is non-null, replaces all points. Updates <see cref="Models.Route.IsActive"/> when <paramref name="isActive"/> is set.
+    /// </summary>
+    Task<bool> TryUpdateRouteForUserAsync(
+        Guid routeId,
+        Guid userId,
+        bool? isActive,
+        IReadOnlyList<Models.RoutePoint>? replacementPoints,
+        CancellationToken cancellationToken = default);
 }

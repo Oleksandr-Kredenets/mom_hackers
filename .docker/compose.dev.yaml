@@ -7,6 +7,8 @@ services:
     build:
       context: ..
       dockerfile: ./.docker/Dockerfile.valhalla
+    env_file:
+      - ../.env
     networks:
       - internal
     volumes:
