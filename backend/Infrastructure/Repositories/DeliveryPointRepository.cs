@@ -1,16 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using TMS.Domain.Models;
 using TMS.Domain.Interfaces;
-using TMS.Infrastructure.Contexts;
+using TMS.Infrastructure;
 
 namespace TMS.Infrastructure.Repositories;
 
 public class DeliveryPointRepository : IDeliveryPointRepository
 {
-    // не імплеменовано UpdateDeliveryPointAsync
-    private readonly TMSDbContext _context;
+    private readonly TmsDbContext _context;
 
-    public DeliveryPointRepository(TMSDbContext context)
+    public DeliveryPointRepository(TmsDbContext context)
     {
         _context = context;
     }

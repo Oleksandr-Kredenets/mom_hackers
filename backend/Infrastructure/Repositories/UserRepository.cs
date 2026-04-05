@@ -1,16 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using TMS.Domain.Interfaces;
 using TMS.Domain.Models;
-using TMS.Infrastructure.Contexts;
-using Microsoft.AspNetCore.Identity;
+using TMS.Infrastructure;
+//using Microsoft.AspNetCore.Identity;
 
 namespace TMS.Infrastructure.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly TMSDbContext _context;
+    private readonly TmsDbContext _context;
 
-    public UserRepository(TMSDbContext context)
+    public UserRepository(TmsDbContext context)
     {
         _context = context;
     }

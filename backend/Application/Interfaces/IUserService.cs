@@ -1,4 +1,4 @@
-using TMS.Infrastructure.Security;
+using TMS.Application.DTOs;
 using TMS.Domain.Models;
 
 namespace TMS.Application.Interfaces;

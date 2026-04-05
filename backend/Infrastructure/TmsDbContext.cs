@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using TMS.Domain.Models;
 
-namespace TMS.Infrastructure.Contexts;
+namespace TMS.Infrastructure;
 
-public class TMSDbContext : DbContext
+public class TmsDbContext : DbContext
 {
-    public TMSDbContext(DbContextOptions<TMSDbContext> options) : base(options)
+    public TmsDbContext(DbContextOptions<TmsDbContext> options) : base(options)
     {
     }
 
@@ -20,7 +20,7 @@ public class TMSDbContext : DbContext
 
     public DbSet<DeliveryPoint> DeliveryPoints { get; set; } = null!;
     public DbSet<RoutePoint> RoutePoints { get; set; } = null!;
-    public DbSet<Domain.Models.Route> Routes { get; set; } = null!;
+    public DbSet<GRoute> GRoutes { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Warehouse> Warehouses { get; set; } = null!;
 }

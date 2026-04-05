@@ -4,17 +4,22 @@ using TMS.Domain.Models;
 using TMS.Infrastructure.Contexts;
 using RouteEntity = TMS.Domain.Models.Route;
 
+using TMS.Domain.Models;
+using TMS.Domain.Interfaces;
 namespace TMS.Infrastructure.Repositories;
 
 public class RouteRepository : IRouteRepository
 {
     private readonly TMSDbContext _context;
 
-    public RouteRepository(TMSDbContext context)
+    public RouteRepository(TMSDbContext context);
+
+    private readonly TmsDbContext _context;
+
+    public RouteRepository(TmsDbContext context)
     {
         _context = context;
     }
-
     public async Task AddRouteAsync(
         RouteEntity route,
         IEnumerable<RoutePoint> points,
@@ -135,5 +140,58 @@ public class RouteRepository : IRouteRepository
 
         await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return true;
+    }
+    public async Task<List<Dictionary<GRoute, List<RoutePoint>>>> GetAllRoutesAsync()
+    {
+        List<GRoute> routesId = await _context.GRoutes
+                      .AsNoTracking()
+                      .ToListAsync();
+        
+        List<Dictionary<GRoute, List<RoutePoint>>> routes = new List<Dictionary<GRoute, List<RoutePoint>>>();
+        foreach (var route in routesId)
+        {
+            List<RoutePoint> points = await _context.RoutePoints
+                      .Where(rp => rp.RouteId == route.Id)
+                      .AsNoTracking()
+                      .ToListAsync();
+            routes.Add(new Dictionary<GRoute, List<RoutePoint>> { { route, points } });
+        }
+        return routes;
+    }
+
+    public async Task AddRouteAsync(GRoute route, List<RoutePoint> points)
+    {
+        _context.GRoutes.Add(route);
+        _context.RoutePoints.AddRange(points);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<bool> DeleteRouteByIdAsync(Guid id)
+    {
+        var route = await _context.GRoutes.FindAsync(id);
+        if (route == null)
+            return false;
+
+        _context.GRoutes.Remove(route);
+        List<RoutePoint> points = await _context.RoutePoints
+                      .Where(rp => rp.RouteId == id)
+                      .ToListAsync();
+        _context.RoutePoints.RemoveRange(points);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task DeleteAllRoutesAsync()
+    {
+        var allRoutes = await _context.GRoutes.ToListAsync();
+        _context.GRoutes.RemoveRange(allRoutes);
+        foreach (var route in allRoutes)
+        {
+            List<RoutePoint> points = await _context.RoutePoints
+                      .Where(rp => rp.RouteId == route.Id)
+                      .ToListAsync();
+            _context.RoutePoints.RemoveRange(points);
+        }
+        await _context.SaveChangesAsync();
     }
 }

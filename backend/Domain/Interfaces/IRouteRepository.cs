@@ -1,3 +1,4 @@
+using TMS.Domain.Models;
 namespace TMS.Domain.Interfaces;
 
 public interface IRouteRepository
@@ -24,4 +25,9 @@ public interface IRouteRepository
         bool? isActive,
         IReadOnlyList<Models.RoutePoint>? replacementPoints,
         CancellationToken cancellationToken = default);
+
+    public Task<List<Dictionary<GRoute, List<RoutePoint>>>> GetAllRoutesAsync();
+    public Task AddRouteAsync(GRoute route, List<RoutePoint> points);
+    public Task<bool> DeleteRouteByIdAsync(Guid id);
+    Task DeleteAllRoutesAsync();
 }

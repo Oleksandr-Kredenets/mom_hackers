@@ -2,7 +2,7 @@ using TMS.Application.Interfaces;
 using TMS.Domain.Interfaces;
 using TMS.Domain.Models;
 using Microsoft.AspNetCore.Identity;
-using TMS.Infrastructure.Security;
+using TMS.Application.DTOs;
 
 namespace TMS.Application.Services;
 
