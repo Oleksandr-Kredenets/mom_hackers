@@ -28,46 +28,50 @@
       <div class="card task-panel">
         <h2><i class="fa-solid fa-list-check"></i> Панель завдань</h2>
 
-        <button><i class="fa-solid fa-plus"></i> Додати точку</button>
-        <button><i class="fa-solid fa-trash"></i> Видалити точку</button>
-        <button><i class="fa-solid fa-warehouse"></i> Додати склад</button>
-        <button><i class="fa-solid fa-trash-can"></i> Видалити склад</button>
-        <button><i class="fa-solid fa-route"></i> Розрахувати маршрут</button>
-        <button><i class="fa-solid fa-pencil"></i> Вказати маршрут</button>
-        <button><i class="fa-solid fa-gas-pump"></i> Розрахувати ціну</button>
+        <button id="addPointBtn"><i class="fa-solid fa-plus"></i> Додати точку</button>
+        <button id="addWarehouseBtn"><i class="fa-solid fa-warehouse"></i> Додати склад</button>
+        <button id="buildRouteBtn"><i class="fa-solid fa-route"></i> Розрахувати маршрут</button>
+        <button id="waypointRouteBtn"><i class="fa-solid fa-draw-polygon"></i> Маршрут через проміжні точки</button>
+        <button id="priceBtn"><i class="fa-solid fa-gas-pump"></i> Розрахувати ціну за маршрутом</button>
+
+        <div class="waypoint-controls hidden" id="waypointControls">
+          <button id="finishWaypointRouteBtn" class="success-btn">
+            <i class="fa-solid fa-check"></i> Завершити маршрут
+          </button>
+          <button id="clearWaypointRouteBtn" class="secondary-task-btn">
+            <i class="fa-solid fa-rotate-left"></i> Очистити проміжні точки
+          </button>
+          <div class="waypoint-counter" id="waypointCounterText">Проміжних точок: 0</div>
+        </div>
+
+        <div class="mode-info" id="modeInfo">Режим: звичайний перегляд</div>
+
+        <div class="current-selection">
+          <div><strong>Обраний склад:</strong> <span id="selectedWarehouseText">не обрано</span></div>
+          <div><strong>Обрана точка:</strong> <span id="selectedPointText">не обрано</span></div>
+        </div>
+
+        <div class="route-price-box" id="routePriceBox">
+          <div class="route-price-label">Ціна маршруту</div>
+          <div class="route-price-value" id="routePriceText">ще не розраховано</div>
+          <div class="route-price-meta" id="routePriceMeta">Оберіть маршрут або розрахуйте новий</div>
+        </div>
       </div>
 
       <div class="middle-column">
         <div class="card points">
           <h2><i class="fa-solid fa-location-dot"></i> Список точок</h2>
+          <div id="pointsList"></div>
+        </div>
 
-          <div class="list-item">
-            <div class="list-title">Точка 1</div>
-            <div class="list-subtitle">вул. Шевченка, 12</div>
-            <span class="badge">Постачальна точка</span>
-          </div>
-
-          <div class="list-item">
-            <div class="list-title">Склад 1</div>
-            <div class="list-subtitle">вул. Промислова, 8</div>
-            <span class="badge">Склад</span>
-          </div>
+        <div class="card warehouses">
+          <h2><i class="fa-solid fa-warehouse"></i> Список складів</h2>
+          <div id="warehousesList"></div>
         </div>
 
         <div class="card routes">
           <h2><i class="fa-solid fa-road"></i> Список маршрутів</h2>
-
-          <div class="list-item">
-            <div class="list-title">Маршрут #1</div>
-            <div class="list-subtitle">Склад 1 → Точка 1</div>
-            <span class="badge">12.4 км</span>
-          </div>
-
-          <div class="list-item">
-            <div class="list-title">Маршрут #2</div>
-            <div class="list-subtitle">Склад 1 → Точка 2</div>
-            <span class="badge">18.7 км</span>
-          </div>
+          <div id="routesList"></div>
         </div>
       </div>
 
@@ -75,6 +79,81 @@
         <h2><i class="fa-solid fa-map-location-dot"></i> Карта</h2>
         <div id="map"></div>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="priceModalBackdrop">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="priceModalTitle">
+      <div class="modal-header">
+        <div>
+          <h3 id="priceModalTitle">Розрахувати ціну за маршрутом</h3>
+          <p id="priceModalSubtitle">Введіть назву маршруту, адреси та параметри</p>
+        </div>
+        <button type="button" class="modal-close" id="closePriceModalBtn">✕</button>
+      </div>
+
+      <form id="priceForm" class="modal-form">
+        <label for="routeNameInput">Назва маршруту</label>
+        <input
+          type="text"
+          id="routeNameInput"
+          placeholder="Наприклад: Доставка в Дубляни"
+          required
+        >
+
+        <label for="warehouseAddressInput">Адреса складу</label>
+        <input
+          type="text"
+          id="warehouseAddressInput"
+          placeholder="Наприклад: Львів, вул. Городоцька, 1"
+          required
+        >
+
+        <label for="pointAddressInput">Адреса точки</label>
+        <input
+          type="text"
+          id="pointAddressInput"
+          placeholder="Наприклад: Львів, вул. Стрийська, 45"
+          required
+        >
+
+        <div class="modal-grid modal-grid-3">
+          <div>
+            <label for="fuelTypeSelect">Тип пального</label>
+            <select id="fuelTypeSelect" required>
+              <option value="diesel">Дизель</option>
+              <option value="petrol">Бензин</option>
+              <option value="gas">Газ</option>
+              <option value="electric">Електро</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="fuelOperatorSelect">Оператор пального</label>
+            <select id="fuelOperatorSelect" required></select>
+          </div>
+
+          <div>
+            <label for="vehicleLoadSelect">Завантаженість</label>
+            <select id="vehicleLoadSelect" required>
+              <option value="light">Легка</option>
+              <option value="medium" selected>Середня</option>
+              <option value="heavy">Висока</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fuel-info-card" id="fuelInfoCard"></div>
+
+        <div class="modal-note" id="waypointNote">
+          Якщо зараз активний режим проміжних точок, маршрут буде побудований через вибрані точки на карті.
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" id="cancelPriceModalBtn">Скасувати</button>
+          <button type="submit" class="primary-btn" id="submitPriceBtn">Розрахувати</button>
+        </div>
+      </form>
     </div>
   </div>
 
