@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TMS.Infrastructure.Security;
+using TMS.Application.DTOs;
 using Web.Helpers;
 
 namespace Web.Controllers;

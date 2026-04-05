@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using TMS.Application.DTOs;
 using TMS.Infrastructure.Security;
 
 namespace Web.Helpers;

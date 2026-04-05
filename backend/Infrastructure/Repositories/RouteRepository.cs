@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TMS.Domain.Interfaces;
 using TMS.Domain.Models;
-using TMS.Infrastructure.Contexts;
+using TMS.Infrastructure;
 using RouteEntity = TMS.Domain.Models.Route;
 
 using TMS.Domain.Models;
@@ -10,7 +10,7 @@ namespace TMS.Infrastructure.Repositories;
 
 public class RouteRepository : IRouteRepository
 {
-    private readonly TMSDbContext _context;
+    private readonly TmsDbContext _context;
 
     public RouteRepository(TMSDbContext context);
 

@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using TMS.Domain.Interfaces;
 using TMS.Domain.Models;
-using TMS.Infrastructure.Contexts;
+using TMS.Infrastructure;
 
 namespace TMS.Infrastructure.Repositories;
 
 public class WarehouseRepository : IWarehouseRepository
 {
-    private readonly TMSDbContext _context;
+    private readonly TmsDbContext _context;
 
-    public WarehouseRepository(TMSDbContext context)
+    public WarehouseRepository(TmsDbContext context)
     {
         _context = context;
     }
