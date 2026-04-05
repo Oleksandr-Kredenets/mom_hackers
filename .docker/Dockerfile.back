@@ -9,9 +9,9 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY backend/Web/Web.csproj backend/Web/
-RUN dotnet restore backend/Web/Web.csproj
-
 COPY backend/ ./backend/
+
+RUN dotnet restore backend/Web/Web.csproj
 RUN dotnet publish backend/Web/Web.csproj -c Release -o /app/publish --no-restore
 
 
