@@ -18,6 +18,12 @@ using TMS.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.UseUrls("http://localhost:5001");
+
+string? connectionString = builder.Configuration.GetConnectionString("PostgreSQL");
+        builder.Services.AddDbContext<TmsDbContext>(options =>
+            options.UseNpgsql(connectionString));
+
 var authSecret = builder.Configuration["AUTH_SECRET"];
 if (string.IsNullOrWhiteSpace(authSecret))
     throw new InvalidOperationException(
@@ -32,9 +38,6 @@ if (string.IsNullOrWhiteSpace(valhallaUrl))
     throw new InvalidOperationException(
         "VALHALLA_API_URL (or Valhalla:ApiUrl) is required. Example: http://localhost:8002");
 valhallaUrl = valhallaUrl.Trim().TrimEnd('/') + "/";
-
-builder.Services.AddDbContext<TmsDbContext>(options =>
-    options.UseInMemoryDatabase("dev"));
 
 builder.Services.AddSingleton<IJwtTokenService>(_ => new JwtTokenService(authSecret));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -90,44 +93,45 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(
             new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true));
     });
+//
+/*  builder.Services.AddEndpointsApiExplorer();
+ builder.Services.AddSwaggerGen(options =>
+ {
+     options.SwaggerDoc("v1", new OpenApiInfo { Title = "TMS API", Version = "v1" });
+     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+     {
+         Description = "JWT Authorization header using the Bearer scheme.",
+         Name = "Authorization",
+         In = ParameterLocation.Header,
+         Type = SecuritySchemeType.Http,
+         Scheme = "Bearer",
+         BearerFormat = "JWT",
+     });
+     options.AddSecurityRequirement(new OpenApiSecurityRequirement
+     {
+         {
+             new OpenApiSecurityScheme
+             {
+                 Reference = new OpenApiReference
+                 {
 
-// builder.Services.AddEndpointsApiExplorer();
-// builder.Services.AddSwaggerGen(options =>
-// {
-//     options.SwaggerDoc("v1", new OpenApiInfo { Title = "TMS API", Version = "v1" });
-//     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-//     {
-//         Description = "JWT Authorization header using the Bearer scheme.",
-//         Name = "Authorization",
-//         In = ParameterLocation.Header,
-//         Type = SecuritySchemeType.Http,
-//         Scheme = "Bearer",
-//         BearerFormat = "JWT",
-//     });
-//     options.AddSecurityRequirement(new OpenApiSecurityRequirement
-//     {
-//         {
-//             new OpenApiSecurityScheme
-//             {
-//                 Reference = new OpenApiReference
-//                 {
-//                     Type = ReferenceType.SecurityScheme,
-//                     Id = "Bearer",
-//                 },
-//             },
-//             Array.Empty<string>()
-//         },
-//     });
-// });
-
+                     Type = ReferenceType.SecurityScheme,
+                     Id = "Bearer",
+                 },
+             },
+             Array.Empty<string>()
+         },
+     });
+ }); */
+//
 var app = builder.Build();
-
-// if (app.Environment.IsDevelopment())
-// {
-//     app.UseSwagger();
-//     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TMS API v1"));
-// }
-
+//
+/*  if (app.Environment.IsDevelopment())
+ {
+     app.UseSwagger();
+     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TMS API v1"));
+ } */
+//
 app.UseRouting();
 if (corsOrigins.Length > 0)
     app.UseCors();

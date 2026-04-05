@@ -7,7 +7,7 @@ using Web.Helpers;
 namespace Web.Controllers;
 
 [ApiController]
-[Route("api/warehouse")]
+[Route("api/warehouses")]
 [Authorize]
 public class WarehouseController : ControllerBase
 {

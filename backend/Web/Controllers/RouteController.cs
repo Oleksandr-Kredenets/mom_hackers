@@ -12,7 +12,7 @@ using Web.Helpers;
 namespace Web.Controllers;
 
 [ApiController]
-[Route("api/route")]
+[Route("api/routes")]
 [Authorize]
 public class RouteController : ControllerBase
 {
@@ -119,7 +119,6 @@ public class RouteController : ControllerBase
     }
 
     /// <summary>Builds a GeoJSON FeatureCollection; persists each computed vehicle route for the current user.</summary>
-    [HttpPost("calculate")]
     [ProducesResponseType(typeof(GeoJsonFeatureCollection), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
