@@ -1,5 +1,5 @@
 # Build (from repository root):
-#   docker build -f .docker/Dockerfile . -t hackathon-back
+#   docker build -f .docker/Dockerfile.back . -t hackathon-back
 
 # Run:
 #   docker run -p 127.0.0.1:8080:8080 hackathon-back
@@ -20,8 +20,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
-ENV SERVER_PORT=8080
-ENV ASPNETCORE_URLS=http://+:$SERVER_PORT
-EXPOSE $SERVER_PORT
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "Web.dll"]
