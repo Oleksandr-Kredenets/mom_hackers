@@ -4,17 +4,18 @@ if (!savedUser) {
 }
 
 const STORAGE_KEYS = {
-  theme: 'theme',
-  points: 'logistics_points',
-  warehouses: 'logistics_warehouses',
-  routes: 'logistics_routes',
-  pointCounter: 'logistics_point_counter',
-  warehouseCounter: 'logistics_warehouse_counter',
-  routeCounter: 'logistics_route_counter',
-  selectedPointId: 'logistics_selected_point_id',
-  selectedWarehouseId: 'logistics_selected_warehouse_id',
-  lastRoutePrice: 'logistics_last_route_price'
-};
+    theme: 'theme',
+    points: 'logistics_points',
+    warehouses: 'logistics_warehouses',
+    routes: 'logistics_routes',
+    pointCounter: 'logistics_point_counter',
+    warehouseCounter: 'logistics_warehouse_counter',
+    routeCounter: 'logistics_route_counter',
+    selectedPointId: 'logistics_selected_point_id',
+    selectedWarehouseId: 'logistics_selected_warehouse_id',
+    lastRoutePrice: 'logistics_last_route_price',
+    jsonSeeded: 'logistics_json_seeded'
+  };
 
 const ROUTE_COLORS = [
   '#22c55e',
@@ -154,13 +155,27 @@ let modalMode = 'create-from-address';
 let tempWaypointMarkers = [];
 let tempWaypointCoords = [];
 
+let carMarker = null;
+let carAnimationInterval = null;
+
 const OPERATOR_CONFIG = buildOperatorsConfig();
 
 const map = L.map('map').setView([49.84, 24.03], 12);
 
+
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap'
 }).addTo(map);
+
+setTimeout(() => {
+  map.invalidateSize();
+}, 200);
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 300);
+});
 
 const pointIcon = L.divIcon({
   className: '',
@@ -183,18 +198,27 @@ const waypointIcon = L.divIcon({
   iconAnchor: [7, 7]
 });
 
-populateOperatorSelect();
-applySavedTheme();
-attachThemeListeners();
-attachMainListeners();
-loadSavedData();
-restoreLastRoutePrice();
-updateSelectionText();
-renderPointsList();
-renderWarehousesList();
-renderRoutesList();
-updateFuelInfoCard();
-updateWaypointControls();
+async function initApp() {
+  populateOperatorSelect();
+  applySavedTheme();
+  attachThemeListeners();
+  attachMainListeners();
+
+  await ensureJsonSeeded();
+
+  loadSavedData();
+  restoreLastRoutePrice();
+  updateSelectionText();
+  renderPointsList();
+  renderWarehousesList();
+  renderRoutesList();
+  updateFuelInfoCard();
+  updateWaypointControls();
+
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 300);
+}
 
 function parseStoredNumber(value) {
   if (value === null || value === '') return null;
@@ -955,6 +979,109 @@ function getOperatorFuelPrice(operatorName, fuelType) {
   return operator.prices[fuelType];
 }
 
+function stopCarAnimation() {
+  if (carAnimationInterval) {
+    clearInterval(carAnimationInterval);
+    carAnimationInterval = null;
+  }
+
+  if (carMarker) {
+    map.removeLayer(carMarker);
+    carMarker = null;
+  }
+}
+
+function getSampledRouteCoords(routeCoords, maxSteps = 120) {
+  if (!Array.isArray(routeCoords) || routeCoords.length === 0) {
+    return [];
+  }
+
+  if (routeCoords.length <= maxSteps) {
+    return routeCoords;
+  }
+
+  const sampled = [];
+  const step = Math.ceil(routeCoords.length / maxSteps);
+
+  for (let i = 0; i < routeCoords.length; i += step) {
+    sampled.push(routeCoords[i]);
+  }
+
+  const lastCoord = routeCoords[routeCoords.length - 1];
+  const lastSampled = sampled[sampled.length - 1];
+
+  if (
+    !lastSampled ||
+    lastSampled[0] !== lastCoord[0] ||
+    lastSampled[1] !== lastCoord[1]
+  ) {
+    sampled.push(lastCoord);
+  }
+
+  return sampled;
+}
+
+function animateCarAlongRoute(routeCoords) {
+  stopCarAnimation();
+
+  if (!Array.isArray(routeCoords) || routeCoords.length < 2) {
+    return;
+  }
+
+  const coords = routeCoords;
+
+  let segmentIndex = 0;
+  let progress = 0;
+
+  const speed = 0.02; 
+
+  carMarker = L.marker(coords[0], {
+    icon: L.divIcon({
+      className: '',
+      html: `
+        <div style="
+          font-size: 22px;
+          transform: translate(-2px, -2px);
+          filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+          animation: bounce 0.6s infinite alternate;
+        ">
+        🚚
+        </div>
+      `,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    })
+  }).addTo(map);
+
+  carAnimationInterval = setInterval(() => {
+    if (segmentIndex >= coords.length - 1) {
+      clearInterval(carAnimationInterval);
+      carAnimationInterval = null;
+      return;
+    }
+
+    
+
+    const start = coords[segmentIndex];
+    const end = coords[segmentIndex + 1];
+    const speed = 0.99;
+    const angle = Math.atan2(end[1] - start[1], end[0] - start[0]);
+
+    // плавна інтерполяція
+    const lat = start[0] + (end[0] - start[0]) * progress;
+    const lng = start[1] + (end[1] - start[1]) * progress;
+
+    carMarker.setLatLng([lat, lng]);
+
+    progress += speed;
+
+    if (progress >= 1) {
+      progress = 0;
+      segmentIndex++;
+    }
+  }, 16); // ~60 FPS
+}
+
 function createRouteObject(routeData) {
   const polyline = L.polyline(routeData.geometry, {
     color: routeData.color || '#22c55e',
@@ -1145,6 +1272,7 @@ function renderRoutesList() {
       if (activeRouteId === route.id) {
         activeRouteId = null;
         clearRoutePrice();
+        stopCarAnimation();
       }
 
       saveData();
@@ -1173,6 +1301,7 @@ function setActiveRoute(routeId) {
   renderRoutesList();
   updateRoutePriceBox(route);
   map.fitBounds(route.polyline.getBounds(), { padding: [30, 30] });
+  animateCarAlongRoute(route.geometry);
 }
 
 function updateSelectionText() {
@@ -1226,25 +1355,29 @@ function restoreLastRoutePrice() {
 }
 
 function removeRoutesByPoint(pointId) {
+  const activeRouteWillBeDeleted = routes.some(
+    route => route.pointId === pointId && route.id === activeRouteId
+  );
+  
+  if (activeRouteWillBeDeleted) {
+    activeRouteId = null;
+    clearRoutePrice();
+    stopCarAnimation();
+  }
   const routesToDelete = routes.filter(route => route.pointId === pointId);
-
-  routesToDelete.forEach(route => {
-    map.removeLayer(route.polyline);
-  });
-
-  routes = routes.filter(route => route.pointId !== pointId);
-  saveData();
 }
 
 function removeRoutesByWarehouse(warehouseId) {
+  const activeRouteWillBeDeleted = routes.some(
+    route => route.warehouseId === warehouseId && route.id === activeRouteId
+  );
+  
+  if (activeRouteWillBeDeleted) {
+    activeRouteId = null;
+    clearRoutePrice();
+    stopCarAnimation();
+  }
   const routesToDelete = routes.filter(route => route.warehouseId === warehouseId);
-
-  routesToDelete.forEach(route => {
-    map.removeLayer(route.polyline);
-  });
-
-  routes = routes.filter(route => route.warehouseId !== warehouseId);
-  saveData();
 }
 
 function persistSelections() {
@@ -1295,35 +1428,109 @@ function saveData() {
   localStorage.setItem(STORAGE_KEYS.warehouseCounter, String(warehouseCounter));
   localStorage.setItem(STORAGE_KEYS.routeCounter, String(routeCounter));
 }
+async function ensureJsonSeeded() {
+  const alreadySeeded = localStorage.getItem(STORAGE_KEYS.jsonSeeded);
+  const hasPoints = localStorage.getItem(STORAGE_KEYS.points);
+  const hasWarehouses = localStorage.getItem(STORAGE_KEYS.warehouses);
+  const hasRoutes = localStorage.getItem(STORAGE_KEYS.routes);
 
-function loadSavedData() {
-  try {
-    const savedPoints = JSON.parse(localStorage.getItem(STORAGE_KEYS.points) || '[]');
-    const savedWarehouses = JSON.parse(localStorage.getItem(STORAGE_KEYS.warehouses) || '[]');
-    const savedRoutes = JSON.parse(localStorage.getItem(STORAGE_KEYS.routes) || '[]');
-
-    points = savedPoints.map(createPointObject);
-    warehouses = savedWarehouses.map(createWarehouseObject);
-    routes = savedRoutes.map(createRouteObject);
-
-    const layers = [
-      ...points.map(p => p.marker),
-      ...warehouses.map(w => w.marker),
-      ...routes.map(r => r.polyline)
-    ];
-
-    if (layers.length) {
-      const group = L.featureGroup(layers);
-      map.fitBounds(group.getBounds(), { padding: [30, 30] });
-    }
-  } catch (error) {
-    points = [];
-    warehouses = [];
-    routes = [];
+  if (alreadySeeded && hasPoints && hasWarehouses && hasRoutes) {
+    return;
   }
+
+  const pointsData = [
+    {
+      id: 1,
+      name: 'Точка 1',
+      address: 'Львів, вул. Шевченка, 10',
+      lat: 49.8397,
+      lng: 24.0297
+    },
+    {
+      id: 2,
+      name: 'Точка 2',
+      address: 'Львів, вул. Городоцька, 120',
+      lat: 49.8333,
+      lng: 23.9981
+    }
+  ];
+
+  const warehousesData = [
+    {
+      id: 1,
+      name: 'Склад 1',
+      address: 'Львів, вул. Наукова, 7',
+      lat: 49.8078,
+      lng: 24.0181
+    },
+    {
+      id: 2,
+      name: 'Склад 2',
+      address: 'Львів, вул. Зелена, 147',
+      lat: 49.8265,
+      lng: 24.0584
+    }
+  ];
+
+  const routesData = [];
+
+  localStorage.setItem(STORAGE_KEYS.points, JSON.stringify(pointsData));
+  localStorage.setItem(STORAGE_KEYS.warehouses, JSON.stringify(warehousesData));
+  localStorage.setItem(STORAGE_KEYS.routes, JSON.stringify(routesData));
+
+  const maxPointId = getMaxNumericId(pointsData);
+  const maxWarehouseId = getMaxNumericId(warehousesData);
+  const maxRouteId = getMaxNumericId(routesData);
+
+  localStorage.setItem(STORAGE_KEYS.pointCounter, String(maxPointId + 1 || 1));
+  localStorage.setItem(STORAGE_KEYS.warehouseCounter, String(maxWarehouseId + 1 || 1));
+  localStorage.setItem(STORAGE_KEYS.routeCounter, String(maxRouteId + 1 || 1));
+
+  localStorage.setItem(STORAGE_KEYS.jsonSeeded, 'true');
 }
 
-function formatMoney(value) {
+  function getMaxNumericId(items) {
+    if (!Array.isArray(items) || !items.length) return 0;
+  
+    return items.reduce((max, item) => {
+      const value = Number(item.id);
+      return Number.isFinite(value) ? Math.max(max, value) : max;
+    }, 0);
+  }
+
+  function loadSavedData() {
+    try {
+      const savedPoints = JSON.parse(localStorage.getItem(STORAGE_KEYS.points) || '[]');
+      const savedWarehouses = JSON.parse(localStorage.getItem(STORAGE_KEYS.warehouses) || '[]');
+      const savedRoutes = JSON.parse(localStorage.getItem(STORAGE_KEYS.routes) || '[]');
+  
+      points = savedPoints.map(createPointObject);
+      warehouses = savedWarehouses.map(createWarehouseObject);
+      routes = savedRoutes.map(createRouteObject);
+  
+      const layers = [
+        ...points.map(p => p.marker),
+        ...warehouses.map(w => w.marker),
+        ...routes.map(r => r.polyline)
+      ];
+  
+      if (layers.length) {
+        const group = L.featureGroup(layers);
+        map.fitBounds(group.getBounds(), { padding: [30, 30] });
+      }
+  
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 300);
+    } catch (error) {
+      console.error('Помилка читання localStorage:', error);
+      points = [];
+      warehouses = [];
+      routes = [];
+    }
+  }
+  
+  function formatMoney(value) {
   return `${Number(value).toFixed(0)} грн`;
 }
 
@@ -1343,3 +1550,5 @@ function hexToRgba(hex, alpha) {
   const b = bigint & 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+initApp();
