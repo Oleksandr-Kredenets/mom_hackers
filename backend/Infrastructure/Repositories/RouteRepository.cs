@@ -136,4 +136,58 @@ public class RouteRepository : IRouteRepository
         await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return true;
     }
+
+    public async Task<List<Dictionary<Route, List<RoutePoint>>>> GetAllRoutesAsync()
+    {
+        List<Route> routesId = await _context.Routes
+                      .AsNoTracking()
+                      .ToListAsync();
+        
+        List<Dictionary<Route, List<RoutePoint>>> routes = new List<Dictionary<Route, List<RoutePoint>>>();
+        foreach (var route in routesId)
+        {
+            List<RoutePoint> points = await _context.RoutePoints
+                      .Where(rp => rp.RouteId == route.Id)
+                      .AsNoTracking()
+                      .ToListAsync();
+            routes.Add(new Dictionary<Route, List<RoutePoint>> { { route, points } });
+        }
+        return routes;
+    }
+
+    public async Task AddRouteAsync(Route route, List<RoutePoint> points)
+    {
+        _context.Routes.Add(route);
+        _context.RoutePoints.AddRange(points);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<bool> DeleteRouteByIdAsync(Guid id)
+    {
+        var route = await _context.Routes.FindAsync(id);
+        if (route == null)
+            return false;
+
+        _context.Routes.Remove(route);
+        List<RoutePoint> points = await _context.RoutePoints
+                      .Where(rp => rp.RouteId == id)
+                      .ToListAsync();
+        _context.RoutePoints.RemoveRange(points);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task DeleteAllRoutesAsync()
+    {
+        var allRoutes = await _context.Routes.ToListAsync();
+        _context.Routes.RemoveRange(allRoutes);
+        foreach (var route in allRoutes)
+        {
+            List<RoutePoint> points = await _context.RoutePoints
+                      .Where(rp => rp.RouteId == route.Id)
+                      .ToListAsync();
+            _context.RoutePoints.RemoveRange(points);
+        }
+        await _context.SaveChangesAsync();
+    }
 }

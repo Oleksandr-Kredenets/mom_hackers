@@ -25,4 +25,9 @@ public interface IRouteRepository
         bool? isActive,
         IReadOnlyList<Models.RoutePoint>? replacementPoints,
         CancellationToken cancellationToken = default);
+
+    public Task<List<Dictionary<Route, List<RoutePoint>>>> GetAllRoutesAsync();
+    public Task AddRouteAsync(Route route, List<RoutePoint> points);
+    public Task<bool> DeleteRouteByIdAsync(Guid id);
+    Task DeleteAllRoutesAsync();
 }
