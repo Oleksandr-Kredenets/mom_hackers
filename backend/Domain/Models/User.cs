@@ -4,13 +4,8 @@ namespace TMS.Domain.Models;
 public readonly record struct RegisterRequest(string Name, string Email, string Password);
 public readonly record struct LoginRequest(string Email, string Password);
 
-
 public class User
 {
-    public User()
-    {
-        Id = Guid.NewGuid();
-    }
     public Guid Id { get; set; }
     public string Name { get; set; }
     public string Email { get; set; }

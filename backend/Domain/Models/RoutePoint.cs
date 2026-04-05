@@ -1,6 +1,7 @@
 using TMS.Domain.Enums;
-namespace TMS.Domain.Models;
 using System.ComponentModel.DataAnnotations;
+
+namespace TMS.Domain.Models;
 
 public class RoutePoint
 {
@@ -13,13 +14,10 @@ public class RoutePoint
     //     Latitude = latitude;
     //     Longitude = longitude;
     // }
-    public RoutePoint()
-    {
-        Id = Guid.NewGuid();
-        RouteId = Guid.NewGuid();
-    }
     [Key] public Guid Id { get; init; }
+    // The id of the route
     public Guid RouteId { get; init; }
+    // The index of the point in the route
     public int Sequence { get; set; }
     public RoutePointType Type { get; }
     public double Latitude { get; set;}
