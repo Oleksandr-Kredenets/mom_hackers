@@ -57,6 +57,7 @@ Desktop.ini
 .vscode/
 **/[Pp]roperties/
 **/data*
+db/
 
 # Test / coverage
 TestResults/

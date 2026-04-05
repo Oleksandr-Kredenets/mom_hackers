@@ -2,45 +2,31 @@
 #   docker compose -f .docker/compose.dev.yaml --env-file .env up --build
 
 services:
-  valhalla:
-    image: hackathon-valhalla
-    build:
-      context: ..
-      dockerfile: ./.docker/Dockerfile.valhalla
-    env_file:
-      - ../.env
-    networks:
-      - internal
-      - default
-    ports:
-      - 127.0.0.1:8002:8002
-    environment:
-      - server_threads=2  # determines how many threads will be used to run the valhalla server
-      - serve_tiles=True  # If True, starts the service. If false, stops after building the graph.
-      - use_tiles_ignore_pbf=True  # load existing valhalla_tiles.tar directly
-      - tileset_name=2  # name of the resulting graph on disk
-      - build_elevation=False  # build elevation with "True" or "Force": will download only the elevation for areas covered by the graph tiles
-      - build_admins=False  # build admins db with "True" or "Force"
-      - build_time_zones=False  # build timezone db with "True" or "Force"
-      - build_transit=False  # build transit, needs existing GTFS directories mapped to /gtfs_feeds
-      - build_tar=True  # build an indexed tar file from the tile_dir for faster graph loading times
-      - force_rebuild=False  # forces a rebuild of the routing tiles with "True"
-      - update_existing_config=True  # if there are new config entries in the default config, add them to the existing config  
-    volumes:
-      - ${VALHALLA_PERSISTENT_DIR_LOCAL}:/data
-
-  # database:
-  #   image: postgres:14.22
+  # valhalla:
+  #   image: hackathon-valhalla
+  #   build:
+  #     context: ..
+  #     dockerfile: ./.docker/Dockerfile.valhalla
   #   env_file:
   #     - ../.env
-  # #   environment:
-  # #     - POSTGRES_USER=${POSTGRES_USER}
-  # #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-  # #     - POSTGRES_DB=${POSTGRES_DB}
   #   networks:
   #     - internal
+  #     - default
+  #   ports:
+  #     - 127.0.0.1:8002:8002
   #   volumes:
-  #     - ${POSTGRES_PERSISTENT_DIR_LOCAL}:/var/lib/postgresql/data
+  #     - ${VALHALLA_PERSISTENT_DIR_LOCAL}:/data
+
+  database:
+    image: postgres:14.22
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - internal
+    volumes:
+      - ${POSTGRES_PERSISTENT_DIR_LOCAL}:/var/lib/postgresql/data
 
   back:
     image: hackathon-back
@@ -63,8 +49,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
-      - valhalla
-      # - database
+      # - valhalla
+      - database
 
   front:
     image: hackathon-front
