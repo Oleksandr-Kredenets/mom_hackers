@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using TMS.Application.Exceptions;
 using TMS.Application.Interfaces;
 using TMS.Application.Models;
 
@@ -42,11 +43,10 @@ public sealed class ValhallaClient : IValhallaClient
             ["verbose"] = false,
         };
 
-        using var response = await _http.PostAsJsonAsync("sources_to_targets", payload, JsonOptions, cancellationToken)
+        using var response = await PostValhallaAsync("sources_to_targets", payload, cancellationToken)
             .ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Valhalla matrix HTTP {(int)response.StatusCode}: {body}");
+        ThrowIfUpstreamError(response, body, "matrix");
 
         using var doc = JsonDocument.Parse(body);
         var root = doc.RootElement;
@@ -102,7 +102,6 @@ public sealed class ValhallaClient : IValhallaClient
                     target[i, j] = (long)Math.Round(cell.GetDouble());
                 else
                 {
-                    // Valhalla returns kilometers when units = kilometers
                     var km = cell.GetDouble();
                     target[i, j] = (long)Math.Round(km * 1000.0);
                 }
@@ -130,11 +129,9 @@ public sealed class ValhallaClient : IValhallaClient
             ["units"] = "kilometers",
         };
 
-        using var response = await _http.PostAsJsonAsync("route", payload, JsonOptions, cancellationToken)
-            .ConfigureAwait(false);
+        using var response = await PostValhallaAsync("route", payload, cancellationToken).ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Valhalla route HTTP {(int)response.StatusCode}: {body}");
+        ThrowIfUpstreamError(response, body, "route");
 
         using var doc = JsonDocument.Parse(body);
         var root = doc.RootElement;
@@ -170,5 +167,66 @@ public sealed class ValhallaClient : IValhallaClient
             throw new InvalidOperationException("Valhalla returned insufficient shape geometry.");
 
         return merged;
+    }
+
+    private async Task<HttpResponseMessage> PostValhallaAsync(
+        string relativePath,
+        object payload,
+        CancellationToken cancellationToken)
+    {
+        // TEMP: debug logging — remove before production
+        LogTemporaryValhallaRequest(relativePath, payload, _http.BaseAddress?.ToString());
+
+        try
+        {
+            return await _http.PostAsJsonAsync(relativePath, payload, JsonOptions, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ValhallaUnavailableException(
+                "The routing service could not be reached. Check that Valhalla is running and VALHALLA_API_URL is correct.",
+                ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new ValhallaUnavailableException(
+                "The routing service did not respond in time or could not be reached.",
+                ex);
+        }
+    }
+
+    private static void ThrowIfUpstreamError(HttpResponseMessage response, string body, string operation)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var code = (int)response.StatusCode;
+        if (code >= 500)
+        {
+            throw new ValhallaUnavailableException(
+                $"The routing service returned HTTP {code} ({operation}). Try again later.");
+        }
+
+        throw new InvalidOperationException($"Valhalla {operation} HTTP {code}: {body}");
+    }
+
+    /// <summary>TEMP: prints the outgoing Valhalla JSON body to stdout (e.g. docker logs).</summary>
+    private static void LogTemporaryValhallaRequest(string relativePath, object payload, string? baseUri)
+    {
+        var logOpts = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            WriteIndented = true,
+        };
+        var json = JsonSerializer.Serialize(payload, logOpts);
+        var url = string.IsNullOrEmpty(baseUri) ? relativePath : $"{baseUri.TrimEnd('/')}/{relativePath}";
+        Console.WriteLine($"[TEMP Valhalla] POST {url}");
+        Console.WriteLine(json);
     }
 }

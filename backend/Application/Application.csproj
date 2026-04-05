@@ -5,9 +5,11 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <OutputType>Library</OutputType>
+        <RootNamespace>TMS.Application</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Google.OrTools" Version="9.15.6755" />
         <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.9" />
     </ItemGroup>
 

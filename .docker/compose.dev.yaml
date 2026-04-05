@@ -11,6 +11,9 @@ services:
       - ../.env
     networks:
       - internal
+      - default
+    ports:
+      - 127.0.0.1:8002:8002
     volumes:
       - ${VALHALLA_PERSISTENT_DIR_LOCAL}:/data
 
@@ -71,8 +74,10 @@ services:
   #   command: sh -c "echo '0 0 * * * /usr/local/bin/python /data/scrape_fuel_prices.py' > /var/spool/cron/crontabs/root && crond -f -l 2"
   #   volumes:
   #     - ${FUEL_PRICE_CSV_PATH}:/data
+  #   # networks:
+  #   #   - internal
+  #   #   - default
 
 networks:
   internal:
-    driver: bridge
     internal: true

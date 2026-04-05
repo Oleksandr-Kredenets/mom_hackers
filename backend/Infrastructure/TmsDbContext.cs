@@ -20,7 +20,7 @@ public class TmsDbContext : DbContext
 
     public DbSet<DeliveryPoint> DeliveryPoints { get; set; } = null!;
     public DbSet<RoutePoint> RoutePoints { get; set; } = null!;
-    public DbSet<GRoute> GRoutes { get; set; } = null!;
+    public DbSet<Route> Routes { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Warehouse> Warehouses { get; set; } = null!;
 }

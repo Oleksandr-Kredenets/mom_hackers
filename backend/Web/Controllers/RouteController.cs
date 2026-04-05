@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TMS.Application.Exceptions;
 using TMS.Application.Interfaces;
 using TMS.Application.Mappers;
 using TMS.Application.Models.GeoJson;
@@ -122,6 +123,7 @@ public class RouteController : ControllerBase
     [ProducesResponseType(typeof(GeoJsonFeatureCollection), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> PostRouteCalculate(
         [FromBody] RoutePlanRequest body,
         CancellationToken cancellationToken)
@@ -143,6 +145,12 @@ public class RouteController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
+        }
+        catch (ValhallaUnavailableException ex)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new { error = ex.Message, code = "routing_engine_unavailable" });
         }
     }
 }
