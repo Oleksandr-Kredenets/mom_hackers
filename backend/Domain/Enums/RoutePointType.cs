@@ -1,4 +1,4 @@
-using TMS.Domain.Enums;
+namespace TMS.Domain.Enums;
 
 public enum RoutePointType
 {

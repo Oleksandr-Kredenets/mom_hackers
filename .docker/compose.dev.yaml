@@ -1,0 +1,49 @@
+# Run (from repository root):
+#   docker compose -f .docker/compose.dev.yaml --env-file .\.env up --build
+
+services:
+  # valhalla:
+  #   image: valhalla/valhalla:run-latest
+  #   build:
+  #     context: ..
+  #     dockerfile: ./.docker/Dockerfile.valhalla
+  #   networks:
+  #     - internal
+  #   volumes:
+  #     - ${VALHALLA_PERSISTENT_DIR_LOCAL}:/data
+
+  back:
+    image: hackathon-back
+    build:
+      context: ..
+      dockerfile: ./.docker/Dockerfile.back
+    env_file:
+      - ../.env
+    networks:
+      - internal
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    # depends_on:
+    #   - valhalla
+
+  front:
+    image: hackathon-front
+    build:
+      context: ..
+      dockerfile: ./.docker/Dockerfile.front
+    env_file:
+      - ../.env
+    ports:
+      - 127.0.0.1:${FRONTEND_PORT}:80
+    networks:
+      - default
+      - internal
+    depends_on:
+      - back
+  
+  #database:
+
+networks:
+  internal:
+    driver: bridge
+    internal: true

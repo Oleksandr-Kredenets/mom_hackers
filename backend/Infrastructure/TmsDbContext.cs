@@ -1,16 +1,16 @@
-using Microsogt.EntityFrameworkCore;
-using DeliveryPoint.Domain.Models;
+using Microsoft.EntityFrameworkCore;
+using TMS.Domain.Models;
 
-namespace TMS.Infrastructure.Contexts
+namespace TMS.Infrastructure.Contexts;
+
+public class TMSDbContext : DbContext
 {
-    public class TmsDbContext : DbContext
+    public TMSDbContext(DbContextOptions<TMSDbContext> options) : base(options)
     {
-        public TmsDbContext(DbContextOptions<TmsDbContext> options) : base(options)
-        {
-        }
-
-        public DbSet<DeliveryPoint> DeliveryPoints { get; set; } = null;
-        public DbSet<RoutePoint> RoutePoints { get; set; } = null;
-        public DbSet<Route> Routes { get; set; } = null;
     }
+
+    public DbSet<DeliveryPoint> DeliveryPoints { get; set; } = null!;
+    public DbSet<RoutePoint> RoutePoints { get; set; } = null!;
+    public DbSet<Domain.Models.Route> Routes { get; set; } = null!;
+    public DbSet<User> Users { get; set; } = null!;
 }

@@ -1,13 +1,18 @@
+#pragma warning disable CS8618
 namespace TMS.Domain.Models;
 
-public class User{
-    User( string name, string email)
+public readonly record struct RegisterRequest(string Name, string Email, string Password);
+public readonly record struct LoginRequest(string Email, string Password);
+
+
+public class User
+{
+    public User()
     {
         Id = Guid.NewGuid();
-        Name = name;
-        Email = email;
     }
-    public Guid Id;
-    public string Name { get; }
-    public string Email { get; }
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public string PasswordHash { get; set; }
 }

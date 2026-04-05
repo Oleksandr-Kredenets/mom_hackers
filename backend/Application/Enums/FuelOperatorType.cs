@@ -1,4 +1,4 @@
-using TMS.Application.Enums;
+namespace TMS.Application.Enums;
 
 public enum FuelOperatorType
 {

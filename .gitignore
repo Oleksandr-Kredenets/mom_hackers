@@ -55,6 +55,7 @@ Desktop.ini
 
 # Editors
 .vscode/
+**/[Pp]roperties/
 
 # Test / coverage
 TestResults/
