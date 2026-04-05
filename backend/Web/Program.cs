@@ -43,6 +43,7 @@ builder.Services.AddSingleton<IJwtTokenService>(_ => new JwtTokenService(authSec
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+builder.Services.AddScoped<IDeliveryPointRepository, DeliveryPointRepository>();
 builder.Services.AddScoped<IRouteRepository, RouteRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddHttpClient<IValhallaClient, ValhallaClient>(client =>
