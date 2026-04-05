@@ -51,14 +51,41 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
+var corsOrigins = ResolveCorsOrigins(builder.Configuration);
+if (corsOrigins.Length > 0)
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.WithOrigins(corsOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+    });
+}
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
 app.UseRouting();
+if (corsOrigins.Length > 0)
+    app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
+static string[] ResolveCorsOrigins(IConfiguration configuration)
+{
+    var fromEnv = configuration["CORS_ALLOWED_ORIGINS"];
+    if (!string.IsNullOrWhiteSpace(fromEnv))
+    {
+        return fromEnv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    return configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+}
